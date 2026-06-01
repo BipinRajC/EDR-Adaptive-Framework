@@ -755,6 +755,11 @@ void CLI::showTechniqueMenu() {
             << " exploit/injection/crystal_palace " << colors::DIM
             << "T1055.001  " << colors::RESET << colors::BRIGHT_RED << "|"
             << colors::RESET << std::endl;
+  std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
+            << colors::BRIGHT_GREEN << "  [4]" << colors::RESET
+            << " exploit/evasion/syswhispers4    " << colors::DIM
+            << "T1106        " << colors::RESET << colors::BRIGHT_RED << "|"
+            << colors::RESET << std::endl;
   std::cout << colors::BRIGHT_RED << "  +" << std::string(61, '-') << "+"
             << colors::RESET << std::endl;
   std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
@@ -960,8 +965,11 @@ void CLI::handleTechniqueMenu() {
   case 3:
     techniqueId = "T1055.001";
     break;
+  case 4:
+    techniqueId = "T1106";
+    break;
   default:
-    UI::error("Invalid selection. Choose from available exploits (1-3).");
+    UI::error("Invalid selection. Choose from available exploits (1-4).");
     std::cout << std::endl;
     return;
   }
@@ -1242,6 +1250,78 @@ void CLI::cmdRun(const CommandContext &ctx) {
     }
 
     std::cout << std::endl;
+  } else if (techniqueId == "T1106") {
+    // SysWhispers4 — direct syscall EDR bypass
+    std::cout << colors::BRIGHT_CYAN
+              << "[*] SysWhispers4 - Direct Syscall EDR Bypass"
+              << colors::RESET << std::endl;
+    std::cout << std::endl;
+    std::cout << colors::DIM
+              << "    Resolves SSNs at runtime and invokes NT kernel functions\n"
+              << "    via syscall instruction, bypassing EDR user-mode hooks."
+              << colors::RESET << std::endl;
+    std::cout << std::endl;
+
+    std::cout << colors::BRIGHT_CYAN
+              << "[?] SSN Resolution Method" << colors::RESET << std::endl;
+    std::cout << "    [1] FreshyCalls (default, hook-resistant)" << std::endl;
+    std::cout << "    [2] Hell's Gate (fast, fails if hooked)" << std::endl;
+    std::cout << "    [3] Halo's Gate (Hell's Gate + neighbor scan)"
+              << std::endl;
+    std::cout << "    [4] Tartarus' Gate (all hook patterns, ±16 scan)"
+              << std::endl;
+    std::cout << "    [5] RecycledGate (FreshyCalls + cross-validation)"
+              << std::endl;
+    std::cout << "    [6] FromDisk (map clean ntdll from KnownDlls)"
+              << std::endl;
+    std::cout << "    Enter choice (1-6, default=1): ";
+    std::string resolveChoice = readLine();
+    if (resolveChoice == "2")
+      options["resolve"] = "hells_gate";
+    else if (resolveChoice == "3")
+      options["resolve"] = "halos_gate";
+    else if (resolveChoice == "4")
+      options["resolve"] = "tartarus";
+    else if (resolveChoice == "5")
+      options["resolve"] = "recycled";
+    else if (resolveChoice == "6")
+      options["resolve"] = "from_disk";
+    else
+      options["resolve"] = "freshycalls";
+
+    std::cout << std::endl;
+    std::cout << colors::BRIGHT_CYAN
+              << "[?] Invocation Method" << colors::RESET << std::endl;
+    std::cout << "    [1] Direct (syscall in our stub)" << std::endl;
+    std::cout << "    [2] Indirect (jmp to syscall;ret in ntdll)"
+              << std::endl;
+    std::cout << "    Enter choice (1-2, default=1): ";
+    std::string methodChoice = readLine();
+    if (methodChoice == "2")
+      options["method"] = "indirect";
+    else
+      options["method"] = "direct";
+
+    std::cout << std::endl;
+    std::cout << colors::BRIGHT_CYAN
+              << "[?] Evasion Techniques (y/n)" << colors::RESET << std::endl;
+    std::cout << "    Unhook ntdll (.text remap from KnownDlls)? [y/N]: ";
+    std::string unhookChoice = readLine();
+    if (unhookChoice == "y" || unhookChoice == "Y")
+      options["unhook_ntdll"] = "true";
+
+    std::cout << "    Patch ETW (EtwEventWrite)? [y/N]: ";
+    std::string etwChoice = readLine();
+    if (etwChoice == "y" || etwChoice == "Y")
+      options["etw_bypass"] = "true";
+
+    std::cout << "    Patch AMSI (AmsiScanBuffer)? [y/N]: ";
+    std::string amsiChoice = readLine();
+    if (amsiChoice == "y" || amsiChoice == "Y")
+      options["amsi_bypass"] = "true";
+
+    std::cout << std::endl;
+
   } else if (techniqueId == "T1055.001") {
     // Crystal Palace UDRL — single blob, all 6 layers run inside it
     std::cout << colors::BRIGHT_CYAN
@@ -1358,6 +1438,10 @@ void CLI::cmdList(const CommandContext &ctx) {
       {"1", "T1068", "BYOVD (vulndriver.sys)", "Privilege Escalation",
        "Implemented"},
       {"2", "T1562.001", "EDR-Freeze (WerFault)", "Defense Evasion",
+       "Implemented"},
+      {"3", "T1055.001", "Crystal Palace UDRL", "Process Injection",
+       "Implemented"},
+      {"4", "T1106", "SysWhispers4 (Direct Syscalls)", "Defense Evasion",
        "Implemented"},
   };
 
