@@ -755,11 +755,6 @@ void CLI::showTechniqueMenu() {
             << " exploit/injection/crystal_palace " << colors::DIM
             << "T1055.001  " << colors::RESET << colors::BRIGHT_RED << "|"
             << colors::RESET << std::endl;
-  std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
-            << colors::BRIGHT_GREEN << "  [4]" << colors::RESET
-            << " exploit/evasion/syswhispers4     " << colors::DIM
-            << "T1106      " << colors::RESET << colors::BRIGHT_RED << "|"
-            << colors::RESET << std::endl;
   std::cout << colors::BRIGHT_RED << "  +" << std::string(61, '-') << "+"
             << colors::RESET << std::endl;
   std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
@@ -965,11 +960,8 @@ void CLI::handleTechniqueMenu() {
   case 3:
     techniqueId = "T1055.001";
     break;
-  case 4:
-    techniqueId = "T1106";
-    break;
   default:
-    UI::error("Invalid selection. Choose from available exploits (1-4).");
+    UI::error("Invalid selection. Choose from available exploits (1-3).");
     std::cout << std::endl;
     return;
   }
@@ -1293,156 +1285,7 @@ void CLI::cmdRun(const CommandContext &ctx) {
     }
 
     std::cout << std::endl;
-  } else if (techniqueId == "T1106") {
-    // ── SysWhispers4 Direct Syscall EDR Bypass ─────────────────────────────
-    std::cout << colors::BRIGHT_CYAN
-              << "[*] SysWhispers4 - Direct NT Syscall EDR Bypass"
-              << colors::RESET << std::endl;
-    std::cout << colors::DIM
-              << "    Resolves System Service Numbers (SSNs) at runtime and\n"
-                 "    invokes NT kernel functions directly via the 'syscall'\n"
-                 "    instruction, bypassing all user-mode EDR hooks on ntdll."
-              << colors::RESET << std::endl;
-    std::cout << std::endl;
-
-    // Step 1: SSN Resolution Method
-    std::cout << colors::BRIGHT_YELLOW << "[1/3] SSN Resolution Method"
-              << colors::RESET << std::endl;
-    std::cout << "    How should syscall numbers be resolved from ntdll?\n"
-              << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    [1]" << colors::RESET
-              << " FreshyCalls    " << colors::DIM
-              << "Sort Nt* by VA, index=SSN          (default, hook-immune)"
-              << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    [2]" << colors::RESET
-              << " Hell's Gate    " << colors::DIM
-              << "Read 'mov eax,SSN' opcode bytes    (fast, fails if hooked)"
-              << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    [3]" << colors::RESET
-              << " Halo's Gate    " << colors::DIM
-              << "Hell's Gate + scan +-8 neighbors   (tolerates some hooks)"
-              << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    [4]" << colors::RESET
-              << " Tartarus' Gate " << colors::DIM
-              << "All hook patterns + scan +-16      (most hook-tolerant)"
-              << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    [5]" << colors::RESET
-              << " RecycledGate   " << colors::DIM
-              << "FreshyCalls + opcode validation    (logs EDR hook list)"
-              << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    [6]" << colors::RESET
-              << " FromDisk       " << colors::DIM
-              << "Map clean ntdll from KnownDlls     (bypasses ALL hooks)"
-              << colors::RESET << std::endl;
-    std::cout << std::endl;
-    std::cout << "    Choice (1-6, ENTER = FreshyCalls): ";
-
-    {
-      std::string rc = readLine();
-      if      (rc == "2") options["resolve"] = "hells_gate";
-      else if (rc == "3") options["resolve"] = "halos_gate";
-      else if (rc == "4") options["resolve"] = "tartarus";
-      else if (rc == "5") options["resolve"] = "recycled";
-      else if (rc == "6") options["resolve"] = "from_disk";
-      else                options["resolve"] = "freshycalls";
-    }
-
-    // Step 2: Invocation Method
-    std::cout << std::endl;
-    std::cout << colors::BRIGHT_YELLOW << "[2/3] Syscall Invocation Method"
-              << colors::RESET << std::endl;
-    std::cout << "    Where does the CPU execute the 'syscall' instruction?\n"
-              << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    [1]" << colors::RESET
-              << " Direct    " << colors::DIM
-              << "Stub in our PE, RIP = our address space    (default)"
-              << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    [2]" << colors::RESET
-              << " Indirect  " << colors::DIM
-              << "JMP to ntdll gadget, RIP = inside ntdll   (defeats RIP checks)"
-              << colors::RESET << std::endl;
-    std::cout << std::endl;
-    std::cout << "    Choice (1-2, ENTER = Direct): ";
-
-    {
-      std::string mc = readLine();
-      options["method"] = (mc == "2") ? "indirect" : "direct";
-    }
-
-    // Step 3: Evasion Layers
-    std::cout << std::endl;
-    std::cout << colors::BRIGHT_YELLOW << "[3/3] Optional Evasion Layers"
-              << colors::RESET << std::endl;
-    std::cout << "    Applied before SSN resolution. Each is independent.\n"
-              << std::endl;
-
-    std::cout << colors::BRIGHT_GREEN << "    ETW bypass  " << colors::RESET
-              << colors::DIM
-              << " - Patch EtwEventWrite to suppress telemetry events"
-              << colors::RESET << std::endl;
-    std::cout << "    Enable? (y/n, ENTER=n): ";
-    {
-      std::string s = readLine();
-      options["etw_bypass"] =
-          (!s.empty() && s[0] == 'y') ? "true" : "false";
-    }
-
-    std::cout << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    ntdll unhook" << colors::RESET
-              << colors::DIM
-              << " - Remap .text from KnownDlls, removes ALL EDR hooks"
-              << colors::RESET << std::endl;
-    std::cout << "    Enable? (y/n, ENTER=n): ";
-    {
-      std::string s = readLine();
-      options["unhook_ntdll"] =
-          (!s.empty() && s[0] == 'y') ? "true" : "false";
-    }
-
-    std::cout << std::endl;
-    std::cout << colors::BRIGHT_GREEN << "    AMSI bypass " << colors::RESET
-              << colors::DIM
-              << " - Patch AmsiScanBuffer to disable script scanning"
-              << colors::RESET << std::endl;
-    std::cout << "    Enable? (y/n, ENTER=n): ";
-    {
-      std::string s = readLine();
-      options["amsi_bypass"] =
-          (!s.empty() && s[0] == 'y') ? "true" : "false";
-    }
-
-    // Config summary
-    std::cout << std::endl;
-    std::cout << colors::BRIGHT_RED
-              << "  +-[ Configuration ]------------------------------------------+"
-              << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
-              << "  SSN Resolution : " << colors::BRIGHT_CYAN
-              << options["resolve"] << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
-              << "  Invocation     : " << colors::BRIGHT_CYAN
-              << options["method"] << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
-              << "  ETW Bypass     : " << colors::BRIGHT_CYAN
-              << options["etw_bypass"] << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
-              << "  ntdll Unhook   : " << colors::BRIGHT_CYAN
-              << options["unhook_ntdll"] << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
-              << "  AMSI Bypass    : " << colors::BRIGHT_CYAN
-              << options["amsi_bypass"] << colors::RESET << std::endl;
-    std::cout << colors::BRIGHT_RED
-              << "  +------------------------------------------------------------+"
-              << colors::RESET << std::endl;
-    std::cout << std::endl;
-
-    if (!UI::confirm("Run SysWhispers4 with these settings?")) {
-      UI::warning("SysWhispers4 cancelled.");
-      return;
-    }
-    std::cout << std::endl;
   }
-
 
   // Prepare execution
   UI::info("Preparing environment...");
