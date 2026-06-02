@@ -1019,14 +1019,17 @@ void CLI::handleCampaignMenu() {
 
   if (choice == 1) {
     // Dynamically create a campaign file using ONLY your registered exploits
+    // ORDER MATTERS: This is a kill chain — each step enables the next.
+    // Crystal Palace (payload delivery) MUST be last — it uses NtContinue
+    // to transfer execution to the beacon and NEVER RETURNS.
     campaignName = "auto_ml_campaign_" + currentSession_ + ".txt";
     std::ofstream fout(campaignName);
-    fout << "T1068\n";     // BYOVD
-    fout << "T1562.001\n"; // EDR-Freeze
-    fout << "T1055.001\n"; // Crystal Palace
-    fout << "T1106\n";     // SysWhispers4
+    fout << "T1068\n";     // [1] BYOVD — Privilege escalation / driver load
+    fout << "T1562.001\n"; // [2] EDR-Freeze — Suspend EDR processes
+    fout << "T1106\n";     // [3] SysWhispers4 — Bypass user-mode hooks
+    fout << "T1055.001\n"; // [4] Crystal Palace — PAYLOAD DELIVERY (TERMINAL)
     fout.close();
-    UI::info("Generated auto-campaign using available exploit modules.");
+    UI::info("Generated auto-campaign: kill chain order (BYOVD -> EDR-Freeze -> SysWhispers4 -> Crystal Palace).");
   } else if (choice == 2) {
     campaignName = UI::prompt("Enter campaign file path (.txt):");
   } else {
