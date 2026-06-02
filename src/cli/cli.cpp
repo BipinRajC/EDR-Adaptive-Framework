@@ -989,7 +989,7 @@ void CLI::showCampaignMenu() {
   std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
             << colors::BRIGHT_GREEN << "  [1]" << colors::RESET
             << " Auto-ML Campaign   " << colors::DIM
-            << "(BYOVD, EDR-Freeze, CrystalPalace) " << colors::RESET << colors::BRIGHT_RED << "|" << colors::RESET << std::endl;
+            << "(BYOVD, EDR-Freeze, CrystalPalace, SysWhispers4) " << colors::RESET << colors::BRIGHT_RED << "|" << colors::RESET << std::endl;
   std::cout << colors::BRIGHT_RED << "  |" << colors::RESET
             << colors::BRIGHT_GREEN << "  [2]" << colors::RESET
             << " Custom Campaign    " << colors::DIM

@@ -113,13 +113,7 @@ std::vector<ExecutionResult> AgentCore::runCampaign(
     // ------------------------------------------------------------------
     // 2. Pre-run: build initial valid action index list
     // ------------------------------------------------------------------
-    // Map MITRE technique IDs to DQN action indices (see DESIGN.md action space)
-// Inside std::vector<ExecutionResult> AgentCore::runCampaign(...)
-
-    // ------------------------------------------------------------------
-    // 2. Pre-run: build initial valid action index list
-    // ------------------------------------------------------------------
-    // Strict mapping to Python action space size of 3
+    // Strict mapping to Python action space size of 4 (all registered exploits)
     static const std::map<std::string, int> TECH_TO_ACTION = {
         {"T1068",      0},  // Maps to "BYOVD_VulnDriver" in Python
         {"T1562.001",  1},  // Maps to "EDR_Freeze_Thread" in Python
@@ -199,8 +193,93 @@ std::vector<ExecutionResult> AgentCore::runCampaign(
                     targetTech = ait->second;
                     std::cout << "[AgentCore] DQN recommends: "
                               << actionResp.actionName
-                              << " → technique " << targetTech << std::endl;
+                              << " -> technique " << targetTech << std::endl;
                 }
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // INTERACTIVE SETUP PROMPTS
+        // ----------------------------------------------------------------
+        if (targetTech == "T1055.001") {
+            std::cout << "\n[!] CRYSTAL PALACE (KaplaStrike) requires a C2 listener!" << std::endl;
+            std::cout << "    Please set up your listener before proceeding." << std::endl;
+            std::cout << "    Example: nc -lvnp 4444" << std::endl;
+            std::cout << "\n    Have you started the C2 listener? (y/n): ";
+            std::string confirm;
+            std::getline(std::cin, confirm);
+            if (confirm.empty() || (confirm[0] != 'y' && confirm[0] != 'Y')) {
+                std::cout << "[AgentCore] Skipping Crystal Palace - no listener confirmed." << std::endl;
+                
+                // Record a skipped result
+                ExecutionResult skipResult;
+                skipResult.techniqueId = targetTech;
+                skipResult.techniqueName = "Crystal Palace UDRL";
+                skipResult.success = false;
+                skipResult.errorMessage = "Skipped: C2 listener not ready";
+                skipResult.duration = std::chrono::milliseconds(0);
+                results.push_back(skipResult);
+                continue;
+            }
+            std::cout << "[AgentCore] Proceeding with Crystal Palace execution..." << std::endl;
+        }
+        else if (targetTech == "T1106") {
+            std::cout << "\n[*] SYSWHISPERS4 - Direct Syscall EDR Bypass" << std::endl;
+            std::cout << "    This technique uses direct syscalls to bypass user-mode hooks." << std::endl;
+            std::cout << "    Ensure you have appropriate permissions and test environment." << std::endl;
+            std::cout << "\n    Ready to proceed? (y/n): ";
+            std::string confirm;
+            std::getline(std::cin, confirm);
+            if (confirm.empty() || (confirm[0] != 'y' && confirm[0] != 'Y')) {
+                std::cout << "[AgentCore] Skipping SysWhispers4 - user cancelled." << std::endl;
+                
+                ExecutionResult skipResult;
+                skipResult.techniqueId = targetTech;
+                skipResult.techniqueName = "SysWhispers4 Direct Syscalls";
+                skipResult.success = false;
+                skipResult.errorMessage = "Skipped: user cancelled";
+                skipResult.duration = std::chrono::milliseconds(0);
+                results.push_back(skipResult);
+                continue;
+            }
+        }
+        else if (targetTech == "T1068") {
+            std::cout << "\n[*] BYOVD - Bring Your Own Vulnerable Driver" << std::endl;
+            std::cout << "    Ensure you have a vulnerable driver ready at the specified path." << std::endl;
+            std::cout << "    Admin privileges are required." << std::endl;
+            std::cout << "\n    Ready to proceed? (y/n): ";
+            std::string confirm;
+            std::getline(std::cin, confirm);
+            if (confirm.empty() || (confirm[0] != 'y' && confirm[0] != 'Y')) {
+                std::cout << "[AgentCore] Skipping BYOVD - user cancelled." << std::endl;
+                
+                ExecutionResult skipResult;
+                skipResult.techniqueId = targetTech;
+                skipResult.techniqueName = "BYOVD Vulnerable Driver";
+                skipResult.success = false;
+                skipResult.errorMessage = "Skipped: user cancelled";
+                skipResult.duration = std::chrono::milliseconds(0);
+                results.push_back(skipResult);
+                continue;
+            }
+        }
+        else if (targetTech == "T1562.001") {
+            std::cout << "\n[*] EDR-Freeze - Process Suspension Deadlock" << std::endl;
+            std::cout << "    This will attempt to suspend EDR processes." << std::endl;
+            std::cout << "\n    Ready to proceed? (y/n): ";
+            std::string confirm;
+            std::getline(std::cin, confirm);
+            if (confirm.empty() || (confirm[0] != 'y' && confirm[0] != 'Y')) {
+                std::cout << "[AgentCore] Skipping EDR-Freeze - user cancelled." << std::endl;
+                
+                ExecutionResult skipResult;
+                skipResult.techniqueId = targetTech;
+                skipResult.techniqueName = "EDR-Freeze Process Suspension";
+                skipResult.success = false;
+                skipResult.errorMessage = "Skipped: user cancelled";
+                skipResult.duration = std::chrono::milliseconds(0);
+                results.push_back(skipResult);
+                continue;
             }
         }
 
